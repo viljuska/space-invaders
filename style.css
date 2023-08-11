@@ -1,0 +1,16 @@
+body {
+	display: flex;
+	place-content: center;
+	place-items: center;
+	height: 100vh;
+	margin: 0;
+	padding: 0;
+	background-color: #000;
+}
+
+#canvas {
+	border: 1px solid #fff;
+	min-width: 400px;
+	min-height: 300px;
+	background-color: #fff;
+}
