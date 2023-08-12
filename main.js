@@ -140,6 +140,7 @@ window.addEventListener( 'load', () => {
 			this.velocityY         = 8;
 			this.radius            = 5;
 			this.markedForDeletion = false;
+			this.interval          = 50;
 		}
 
 		update() {
@@ -152,11 +153,10 @@ window.addEventListener( 'load', () => {
 
 		draw() {
 			this.ctx.save();
-			this.ctx.strokeStyle = '#fff';
+			this.ctx.fillStyle = '#f00';
 			this.ctx.beginPath();
 			this.ctx.arc( this.x, this.y, this.radius, 0, Math.PI * 2 );
-			this.ctx.closePath();
-			this.ctx.stroke();
+			this.ctx.fill();
 			this.ctx.restore();
 		}
 	}
@@ -199,8 +199,8 @@ window.addEventListener( 'load', () => {
 			this.velocityX = 2;
 			this.velocityY = 0;
 			this.invaders  = [];
-			this.columns   = Math.floor( Math.random() * 8 + 5 );
-			this.rows      = Math.floor( Math.random() * 3 + 3 );
+			this.columns   = Math.floor( Math.random() * 12 + 5 );
+			this.rows      = Math.floor( Math.random() * 5 + 3 );
 			this.width     = this.columns * Invader.width;
 
 			this.generateInvaders();
@@ -216,14 +216,16 @@ window.addEventListener( 'load', () => {
 
 		update() {
 			this.x += this.velocityX;
-			this.y += this.velocityY;
+			this.velocityY = 0;
 
 			if ( this.x + this.width > canvas.width ) {
 				this.velocityX *= -1;
+				this.velocityY = Invader.height * 0.5;
 			}
 
 			if ( this.x < 0 ) {
 				this.velocityX *= -1;
+				this.velocityY = Invader.height * 0.5;
 			}
 		}
 	}
@@ -254,9 +256,18 @@ window.addEventListener( 'load', () => {
 			Invaders:
 				for ( const [ j, invader ] of grid.invaders.entries() ) {
 					for ( const [ k, projectile ] of projectiles.entries() ) {
+						// Remove invader and projectile when they collide
 						if ( projectile.x >= invader.x && projectile.x <= invader.x + Invader.width && projectile.y <= invader.y + Invader.height && projectile.y >= invader.y ) {
 							projectiles.splice( k, 1 );
 							grid.invaders.splice( j, 1 );
+
+							// Re-calculate width of the grid
+							if ( grid.invaders.length ) {
+								const first_invader = grid.invaders[ 0 ],
+								      last_invader  = grid.invaders[ grid.invaders.length - 1 ];
+
+								grid.width = last_invader.x + Invader.width - first_invader.x;
+							}
 
 							continue Invaders;
 						}
