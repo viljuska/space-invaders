@@ -18,8 +18,9 @@ window.addEventListener( 'load', () => {
 		 */
 		constructor( x, y, ctx, width, height ) {
 			this.ctx        = ctx;
-			this.width      = 450 * 0.4;
-			this.height     = 225 * 0.4;
+			this.scale      = 0.25;
+			this.width      = 450 * this.scale;
+			this.height     = 225 * this.scale;
 			this.gameWidth  = width;
 			this.gameHeight = height;
 			this.x          = x - this.width * 0.5;
@@ -150,10 +151,13 @@ window.addEventListener( 'load', () => {
 		}
 
 		draw() {
+			this.ctx.save();
+			this.ctx.strokeStyle = '#fff';
 			this.ctx.beginPath();
 			this.ctx.arc( this.x, this.y, this.radius, 0, Math.PI * 2 );
 			this.ctx.closePath();
 			this.ctx.stroke();
+			this.ctx.restore();
 		}
 	}
 
@@ -166,31 +170,24 @@ window.addEventListener( 'load', () => {
 		 * @param x
 		 * @param y
 		 * @param {CanvasRenderingContext2D} ctx
-		 * @param width
-		 * @param height
 		 */
-		constructor( x, y, ctx, width, height ) {
-			this.ctx        = ctx;
-			this.width      = Invader.width;
-			this.height     = Invader.height;
-			this.gameWidth  = width;
-			this.gameHeight = height;
-			this.x          = x - this.width * 0.5;
-			this.y          = y - this.height;
-			this.velocityX  = 10;
-			this.velocityY  = 10;
-			this.rotation   = 0;
-			this.velocityR  = 0.15;
-			this.image      = new Image();
-			this.image.src  = '/assets/icons/invader.png';
+		constructor( x, y, ctx ) {
+			this.ctx               = ctx;
+			this.width             = Invader.width;
+			this.height            = Invader.height;
+			this.x                 = x;
+			this.y                 = y;
+			this.image             = new Image();
+			this.image.src         = '/assets/icons/invader.png';
+			this.markedForDeletion = false;
 		}
 
-		update() {
-
+		update( velocityX, velocityY ) {
+			this.x += velocityX;
+			this.y += velocityY;
 		}
 
 		draw() {
-			this.ctx.fillRect( this.x, this.y, this.width, this.height );
 			this.ctx.drawImage( this.image, this.x, this.y, this.width, this.height );
 		}
 	}
@@ -199,11 +196,12 @@ window.addEventListener( 'load', () => {
 		constructor() {
 			this.x         = 0;
 			this.y         = 0;
-			this.velocityX = 3;
-			this.velocityY = 3;
+			this.velocityX = 2;
+			this.velocityY = 0;
 			this.invaders  = [];
-			this.columns   = Math.floor( Math.random() * 5 + 1 );
-			this.rows      = Math.floor( Math.random() * 5 + 1 );
+			this.columns   = Math.floor( Math.random() * 8 + 5 );
+			this.rows      = Math.floor( Math.random() * 3 + 3 );
+			this.width     = this.columns * Invader.width;
 
 			this.generateInvaders();
 		}
@@ -211,13 +209,22 @@ window.addEventListener( 'load', () => {
 		generateInvaders() {
 			for ( let i = 0; i < this.columns; i++ ) {
 				for ( let j = 0; j < this.rows; j++ ) {
-					this.invaders.push( new Invader( i * Invader.width, j * Invader.height, ctx, canvas.width, canvas.height ) );
+					this.invaders.push( new Invader( i * Invader.width, j * Invader.height, ctx ) );
 				}
 			}
 		}
 
 		update() {
+			this.x += this.velocityX;
+			this.y += this.velocityY;
 
+			if ( this.x + this.width > canvas.width ) {
+				this.velocityX *= -1;
+			}
+
+			if ( this.x < 0 ) {
+				this.velocityX *= -1;
+			}
 		}
 	}
 
@@ -241,19 +248,23 @@ window.addEventListener( 'load', () => {
 		player.update();
 		player.draw();
 
-
-		for ( const [ index, grid ] of grids.entries() ) {
+		for ( const [ i, grid ] of grids.entries() ) {
 			grid.update();
 
-			for ( const [ index, invader ] of grid.invaders.entries() ) {
-				// if ( invader.markedForDeletion ) {
-				// 	projectiles.splice( index, 1 );
-				// 	continue;
-				// }
+			Invaders:
+				for ( const [ j, invader ] of grid.invaders.entries() ) {
+					for ( const [ k, projectile ] of projectiles.entries() ) {
+						if ( projectile.x >= invader.x && projectile.x <= invader.x + Invader.width && projectile.y <= invader.y + Invader.height && projectile.y >= invader.y ) {
+							projectiles.splice( k, 1 );
+							grid.invaders.splice( j, 1 );
 
-				invader.update();
-				invader.draw();
-			}
+							continue Invaders;
+						}
+					}
+
+					invader.update( grid.velocityX, grid.velocityY );
+					invader.draw();
+				}
 		}
 
 		for ( const [ index, projectile ] of projectiles.entries() ) {
